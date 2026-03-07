@@ -53,12 +53,13 @@ cron.schedule('* * * * *', async () => {
 
 const PORT = parseInt(env.PORT, 10);
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
+  const host = env.NODE_ENV === 'production' ? env.APP_URL : `http://localhost:${PORT}`;
   console.log(`
 🏠 Ghar Server is running!
-📡 API: http://localhost:${PORT}/api
-🌐 Web Form: http://localhost:${PORT}/visit/:familyId
-🔌 Socket.IO: ws://localhost:${PORT}
+📡 API: ${host}/api
+🌐 Web Form: ${host}/visit/:familyId
+🔌 Socket.IO: ${host}
 🔧 Environment: ${env.NODE_ENV}
   `);
 });

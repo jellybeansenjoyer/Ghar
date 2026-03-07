@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../config/app_config.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../core/storage/secure_storage.dart';
@@ -90,7 +91,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final googleSignIn = GoogleSignIn();
+      final serverClientId = AppConfig.googleClientId.isNotEmpty
+          ? AppConfig.googleClientId
+          : null;
+
+      final googleSignIn = GoogleSignIn(
+        serverClientId: serverClientId,
+        scopes: ['email', 'profile'],
+      );
       final account = await googleSignIn.signIn();
       if (account == null) {
         state = state.copyWith(isLoading: false);
@@ -99,8 +107,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       final auth = await account.authentication;
       if (auth.idToken == null) {
-        state =
-            state.copyWith(isLoading: false, error: 'Failed to get ID token');
+        await googleSignIn.signOut();
+        state = state.copyWith(
+            isLoading: false,
+            error: 'Failed to get ID token');
         return false;
       }
 
