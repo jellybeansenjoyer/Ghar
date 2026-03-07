@@ -96,6 +96,12 @@ coverage/
 context.json
 
 # ==============================
+# Local Documentation (keep local only)
+# ==============================
+*.md
+!app/ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md
+
+# ==============================
 # Miscellaneous
 # ==============================
 *.map.json
