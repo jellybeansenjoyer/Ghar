@@ -15,7 +15,7 @@ services:
       - key: PORT
         value: "3000"
       - key: APP_URL
-        sync: false               # set after first deploy to https://ghar-server.onrender.com
+        value: "https://ghar-server.onrender.com"
       - key: DATABASE_URL
         sync: false               # your Neon PostgreSQL connection string
       - key: JWT_SECRET

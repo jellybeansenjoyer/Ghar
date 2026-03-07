@@ -24,7 +24,7 @@ class SocketService {
     _socket = io.io(
       AppConfig.apiBaseUrl,
       io.OptionBuilder()
-          .setTransports(['websocket'])
+          .setTransports(['websocket', 'polling'])
           .enableAutoConnect()
           .enableReconnection()
           .setReconnectionDelay(1000)

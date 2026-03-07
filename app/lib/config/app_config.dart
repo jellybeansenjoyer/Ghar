@@ -2,7 +2,7 @@ class AppConfig {
   static const String appName = 'Ghar';
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:3000', // Android emulator localhost
+    defaultValue: 'https://ghar-server.onrender.com',
   );
   static const String oneSignalAppId = String.fromEnvironment(
     'ONESIGNAL_APP_ID',
