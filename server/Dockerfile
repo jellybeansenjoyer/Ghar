@@ -1,6 +1,9 @@
 # ---- Build Stage ----
 FROM node:20-alpine AS builder
 
+# Install OpenSSL so Prisma can detect the correct engine binary
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 # Copy dependency manifests
@@ -21,6 +24,9 @@ RUN npm run build
 
 # ---- Production Stage ----
 FROM node:20-alpine
+
+# Install OpenSSL (required by Prisma query engine at runtime)
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
