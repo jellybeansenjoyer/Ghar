@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ghar - Visitor Check-in</title>
+  <link rel="stylesheet" href="/visit/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">🏠</div>
+      <h1>Ghar</h1>
+      <p class="subtitle">Visitor Check-in</p>
+    </div>
+
+    <!-- Form Page -->
+    <div id="formPage" class="page active">
+      <div class="card">
+        <h2>Welcome, Visitor!</h2>
+        <p class="info-text">Please enter your details to notify the family of your arrival.</p>
+        
+        <form id="visitorForm">
+          <div class="form-group">
+            <label for="visitorName">Your Name</label>
+            <input type="text" id="visitorName" placeholder="Enter your full name" required autocomplete="name">
+          </div>
+
+          <div class="form-group">
+            <label for="visitorPhoto">Your Photo</label>
+            <div class="photo-capture">
+              <input type="file" id="visitorPhoto" accept="image/*" capture="user" hidden>
+              <div id="photoPreview" class="photo-preview" onclick="document.getElementById('visitorPhoto').click()">
+                <span class="camera-icon">📷</span>
+                <span>Tap to take a photo</span>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" id="submitBtn" class="btn btn-primary">
+            <span id="submitText">Ring the Bell 🔔</span>
+            <span id="submitLoader" class="loader hidden"></span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Waiting Page -->
+    <div id="waitingPage" class="page">
+      <div class="card center">
+        <div class="ring-animation">
+          <div class="ring-circle"></div>
+          <span class="bell-icon">🔔</span>
+        </div>
+        <h2>Ringing...</h2>
+        <p class="info-text">The family has been notified. Please wait for a response.</p>
+        <div class="dots-loader">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Response Page -->
+    <div id="responsePage" class="page">
+      <div class="card center">
+        <div id="responseIcon" class="response-icon"></div>
+        <h2 id="responseTitle"></h2>
+        <p id="responseMessage" class="info-text"></p>
+      </div>
+    </div>
+
+    <!-- Chat Page -->
+    <div id="chatPage" class="page">
+      <div class="card chat-card">
+        <div class="chat-header">
+          <h3>💬 Chat</h3>
+          <span id="chatStatus" class="chat-status">Connected</span>
+        </div>
+        <div id="chatMessages" class="chat-messages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
+          <button id="chatSendBtn" class="btn btn-send">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/visit/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+# ==============================
+# Environment & Secrets
+# ==============================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+
+# ==============================
+# API Keys / Service Accounts
+# ==============================
+serviceAccountKey.json
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+
+# ==============================
+# Android Signing
+# ==============================
+*.keystore
+*.jks
+key.properties
+app/android/app/*.keystore
+app/android/key.properties
+
+# ==============================
+# Node.js / Backend
+# ==============================
+node_modules/
+server/node_modules/
+server/dist/
+server/.env
+server/.env.*
+!server/.env.example
+
+# ==============================
+# Flutter / Dart
+# ==============================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+app/build/
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.pub-cache/
+app/.pub/
+pubspec.lock
+
+# ==============================
+# IDE / Editor
+# ==============================
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.cursor/
+
+# ==============================
+# OS Files
+# ==============================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ==============================
+# Build Artifacts
+# ==============================
+*.class
+*.log
+*.pyc
+*.o
+*.so
+*.dylib
+
+# ==============================
+# Coverage / Test
+# ==============================
+coverage/
+*.lcov
+.nyc_output/
+
+# ==============================
+# Miscellaneous
+# ==============================
+*.map.json
+*.symbols
+.buildlog/
+.history
+.svn/
+.atom/
+migrate_working_dir/

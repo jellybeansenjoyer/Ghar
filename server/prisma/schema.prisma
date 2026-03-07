@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String   @id @default(uuid()) @db.Uuid
+  name                String   @db.VarChar(255)
+  phone               String?  @unique @db.VarChar(20)
+  email               String?  @unique @db.VarChar(255)
+  googleId            String?  @unique @map("google_id") @db.VarChar(255)
+  avatarUrl           String?  @map("avatar_url") @db.Text
+  familyId            String?  @map("family_id") @db.Uuid
+  role                String   @default("member") @db.VarChar(20)
+  onesignalPlayerId   String?  @map("onesignal_player_id") @db.VarChar(255)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
+
+  family              Family?  @relation(fields: [familyId], references: [id])
+  refreshTokens       RefreshToken[]
+  respondedVisitors   Visitor[] @relation("RespondedBy")
+  adminFamilies       Family[]  @relation("FamilyAdmin")
+
+  @@map("users")
+}
+
+model Family {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(255)
+  address     String?  @db.Text
+  adminId     String   @map("admin_id") @db.Uuid
+  qrCodeData  String?  @map("qr_code_data") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  admin       User     @relation("FamilyAdmin", fields: [adminId], references: [id])
+  members     User[]
+  visitors    Visitor[]
+
+  @@map("families")
+}
+
+model Visitor {
+  id            String    @id @default(uuid()) @db.Uuid
+  familyId      String    @map("family_id") @db.Uuid
+  name          String    @db.VarChar(255)
+  photoUrl      String?   @map("photo_url") @db.Text
+  status        String    @default("pending") @db.VarChar(20)
+  respondedById String?   @map("responded_by") @db.Uuid
+  arrivedAt     DateTime  @default(now()) @map("arrived_at")
+  respondedAt   DateTime? @map("responded_at")
+
+  family        Family    @relation(fields: [familyId], references: [id])
+  respondedBy   User?     @relation("RespondedBy", fields: [respondedById], references: [id])
+  messages      Message[]
+
+  @@map("visitors")
+}
+
+model Message {
+  id          String   @id @default(uuid()) @db.Uuid
+  visitorId   String   @map("visitor_id") @db.Uuid
+  senderType  String   @map("sender_type") @db.VarChar(20)
+  senderName  String?  @map("sender_name") @db.VarChar(255)
+  senderId    String?  @map("sender_id") @db.Uuid
+  content     String   @db.Text
+  sentAt      DateTime @default(now()) @map("sent_at")
+
+  visitor     Visitor  @relation(fields: [visitorId], references: [id])
+
+  @@map("messages")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @db.VarChar(500)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
