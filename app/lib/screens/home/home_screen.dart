@@ -19,8 +19,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
-    _setupRealtime();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+      _setupRealtime();
+    });
   }
 
   Future<void> _loadData() async {

@@ -240,7 +240,7 @@ export async function getQrCode(req: Request, res: Response): Promise<void> {
 
     const family = await prisma.family.findUnique({
       where: { id },
-      select: { qrCodeData: true, name: true },
+      select: { id: true, qrCodeData: true, name: true },
     });
 
     if (!family) {
@@ -248,7 +248,18 @@ export async function getQrCode(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    sendSuccess(res, { qrData: family.qrCodeData, familyName: family.name });
+    // Always generate QR data from current APP_URL to avoid stale localhost URLs
+    const qrData = `${env.APP_URL}/visit/${family.id}`;
+
+    // Update stored value if it's out of date
+    if (family.qrCodeData !== qrData) {
+      await prisma.family.update({
+        where: { id },
+        data: { qrCodeData: qrData },
+      });
+    }
+
+    sendSuccess(res, { qrData, familyName: family.name });
   } catch (error) {
     console.error('Get QR code error:', error);
     sendError(res, 'Failed to get QR code');

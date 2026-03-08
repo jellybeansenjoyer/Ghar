@@ -23,7 +23,9 @@ class _VisitorDetailScreenState extends ConsumerState<VisitorDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _loadVisitor();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadVisitor();
+    });
   }
 
   Future<void> _loadVisitor() async {

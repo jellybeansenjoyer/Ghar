@@ -18,7 +18,9 @@ class _VisitorHistoryScreenState extends ConsumerState<VisitorHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _loadHistory();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHistory();
+    });
   }
 
   Future<void> _loadHistory() async {
