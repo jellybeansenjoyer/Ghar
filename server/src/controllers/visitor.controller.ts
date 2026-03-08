@@ -21,10 +21,14 @@ export async function createVisitor(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Upload photo if provided
+    // Upload photo if provided (non-blocking — visitor is still created if upload fails)
     let photoUrl: string | null = null;
     if (req.file) {
-      photoUrl = await uploadImage(req.file.buffer, 'ghar/visitors');
+      try {
+        photoUrl = await uploadImage(req.file.buffer, 'ghar/visitors');
+      } catch (uploadErr) {
+        console.error('Photo upload failed, continuing without photo:', JSON.stringify(uploadErr));
+      }
     }
 
     // Create visitor record
@@ -78,7 +82,7 @@ export async function createVisitor(req: Request, res: Response): Promise<void> 
       sendError(res, 'Validation error', 400, error.errors);
       return;
     }
-    console.error('Create visitor error:', error);
+    console.error('Create visitor error:', error?.message || JSON.stringify(error));
     sendError(res, 'Failed to register visitor');
   }
 }
