@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../../config/app_config.dart';
 import '../../providers/family_provider.dart';
 import '../../config/theme.dart';
 
@@ -11,8 +12,12 @@ class QrCodeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final familyState = ref.watch(familyProvider);
-    final qrData = familyState.qrCodeData;
-    final familyName = familyState.family?.name ?? 'Family';
+    final family = familyState.family;
+    // Always build QR URL from the current API base URL to avoid stale localhost values
+    final qrData = family != null
+        ? '${AppConfig.apiBaseUrl}/visit/${family.id}'
+        : familyState.qrCodeData;
+    final familyName = family?.name ?? 'Family';
 
     return Scaffold(
       appBar: AppBar(title: const Text('QR Code')),
