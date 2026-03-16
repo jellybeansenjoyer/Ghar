@@ -93,8 +93,8 @@ export async function getFamily(req: Request, res: Response): Promise<void> {
     }
 
     sendSuccess(res, family);
-  } catch (error) {
-    console.error('Get family error:', error);
+  } catch (error: any) {
+    console.error('Get family error:', error?.message || error);
     sendError(res, 'Failed to get family');
   }
 }
@@ -126,8 +126,8 @@ export async function getMembers(req: Request, res: Response): Promise<void> {
     });
 
     sendSuccess(res, members);
-  } catch (error) {
-    console.error('Get members error:', error);
+  } catch (error: any) {
+    console.error('Get members error:', error?.message || error);
     sendError(res, 'Failed to get members');
   }
 }
@@ -285,8 +285,8 @@ export async function removeMember(req: Request, res: Response): Promise<void> {
     });
 
     sendSuccess(res, null, 'Member removed successfully');
-  } catch (error) {
-    console.error('Remove member error:', error);
+  } catch (error: any) {
+    console.error('Remove member error:', error?.message || error);
     sendError(res, 'Failed to remove member');
   }
 }
@@ -331,7 +331,7 @@ export async function getQrCode(req: Request, res: Response): Promise<void> {
 
     console.log(`[getQrCode] Returning QR data for family: ${family.name}`);
     sendSuccess(res, { qrData, familyName: family.name });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[getQrCode] Error:', error?.message || JSON.stringify(error));
     sendError(res, 'Failed to get QR code');
   }
@@ -437,8 +437,8 @@ export async function getInviteInfo(req: Request, res: Response): Promise<void> 
       family: invite.family,
       expiresAt: invite.expiresAt.toISOString(),
     });
-  } catch (error) {
-    console.error('Get invite info error:', error);
+  } catch (error: any) {
+    console.error('Get invite info error:', error?.message || error);
     sendError(res, 'Failed to get invite info');
   }
 }
