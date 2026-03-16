@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../config/app_config.dart';
@@ -135,6 +136,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(user: updatedUser);
     } catch (e) {
       state = state.copyWith(error: _extractError(e));
+    }
+  }
+
+  Future<void> updatePushToken(String playerId) async {
+    try {
+      await _authService.updatePushToken(playerId);
+      // Refresh user profile to get updated player ID
+      final user = await _authService.getProfile();
+      if (user != null) {
+        state = state.copyWith(user: user);
+      }
+    } catch (e) {
+      debugPrint('[AuthProvider] Error updating push token: $e');
     }
   }
 

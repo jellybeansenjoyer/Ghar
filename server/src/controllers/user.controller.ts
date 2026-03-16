@@ -63,14 +63,19 @@ export async function updatePushToken(req: Request, res: Response): Promise<void
       return;
     }
 
-    await prisma.user.update({
+    console.log(`[updatePushToken] Updating push token for user ${userId}: ${playerId}`);
+
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { onesignalPlayerId: playerId },
+      select: { id: true, name: true, onesignalPlayerId: true },
     });
 
+    console.log(`[updatePushToken] ✅ Push token updated successfully for user ${updatedUser.name}`);
+
     sendSuccess(res, null, 'Push token updated');
-  } catch (error) {
-    console.error('Update push token error:', error);
+  } catch (error: any) {
+    console.error('[updatePushToken] Error:', error?.message || error);
     sendError(res, 'Failed to update push token');
   }
 }

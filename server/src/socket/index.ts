@@ -18,15 +18,20 @@ export function initializeSocket(httpServer: HttpServer): SocketServer {
     console.log(`🔌 Client connected: ${socket.id}`);
 
     // Family member joins their family room (authenticated)
-    socket.on('join:family', (data: { familyId: string; token: string }) => {
+    socket.on('join:family', async (data: { familyId: string; token: string }) => {
       try {
         const payload = verifyAccessToken(data.token);
         if (payload.familyId === data.familyId) {
-          socket.join(`family:${data.familyId}`);
-          console.log(`👨‍👩‍👧‍👦 User ${payload.userId} joined family room: ${data.familyId}`);
+          const roomName = `family:${data.familyId}`;
+          await socket.join(roomName);
+          const socketsInRoom = await io.in(roomName).fetchSockets();
+          console.log(`👨‍👩‍👧‍👦 User ${payload.userId} joined family room: ${data.familyId} (Total in room: ${socketsInRoom.length})`);
+        } else {
+          console.error(`[join:family] User ${payload.userId} tried to join wrong family. Token family: ${payload.familyId}, Requested: ${data.familyId}`);
+          socket.emit('error', { message: 'Family ID mismatch' });
         }
-      } catch (error) {
-        console.error('Failed to join family room:', error);
+      } catch (error: any) {
+        console.error('[join:family] Failed to join family room:', error?.message || error);
         socket.emit('error', { message: 'Authentication failed' });
       }
     });

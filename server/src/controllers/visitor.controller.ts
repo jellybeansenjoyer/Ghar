@@ -44,15 +44,29 @@ export async function createVisitor(req: Request, res: Response): Promise<void> 
     // Get all family members' push tokens
     const members = await prisma.user.findMany({
       where: { familyId: data.familyId },
-      select: { onesignalPlayerId: true, id: true },
+      select: { 
+        onesignalPlayerId: true, 
+        id: true, 
+        name: true,
+        phone: true,
+        email: true,
+      },
     });
+
+    console.log(`[createVisitor] Family ${data.familyId} has ${members.length} members`);
 
     const playerIds = members
       .map((m) => m.onesignalPlayerId)
       .filter((id): id is string => !!id);
 
-    // Send push notification
+    console.log(`[createVisitor] Found ${playerIds.length} members with OneSignal player IDs out of ${members.length} total members`);
+    members.forEach((m, idx) => {
+      console.log(`[createVisitor] Member ${idx + 1}: ${m.name} (${m.phone || m.email || 'no contact'}) - Player ID: ${m.onesignalPlayerId || 'NOT SET'}`);
+    });
+
+    // Send push notification to ALL members
     if (playerIds.length > 0) {
+      console.log(`[createVisitor] Sending push notification to ${playerIds.length} devices`);
       await sendPushNotification({
         playerIds,
         title: '🔔 Visitor at the door!',
@@ -65,16 +79,24 @@ export async function createVisitor(req: Request, res: Response): Promise<void> 
           familyId: data.familyId,
         },
       });
+    } else {
+      console.warn(`[createVisitor] WARNING: No OneSignal player IDs found for family ${data.familyId}. Push notifications will not be sent.`);
     }
 
-    // Emit Socket.IO event to family room
+    // Emit Socket.IO event to family room (for real-time updates)
     const io = getIO();
-    io.to(`family:${data.familyId}`).emit('visitor:new', {
+    const familyRoom = `family:${data.familyId}`;
+    const socketsInRoom = await io.in(familyRoom).fetchSockets();
+    console.log(`[createVisitor] Emitting Socket.IO event to family room "${familyRoom}" - ${socketsInRoom.length} connected sockets`);
+    
+    io.to(familyRoom).emit('visitor:new', {
       visitorId: visitor.id,
       name: data.name,
       photoUrl,
       arrivedAt: visitor.arrivedAt.toISOString(),
     });
+
+    console.log(`[createVisitor] Visitor notification sent via push (${playerIds.length} devices) and Socket.IO (${socketsInRoom.length} sockets)`);
 
     sendSuccess(res, { visitorId: visitor.id, status: 'pending' }, 'Visitor registered', 201);
   } catch (error: any) {

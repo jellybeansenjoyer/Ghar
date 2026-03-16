@@ -21,33 +21,40 @@ export async function sendPushNotification(payload: PushPayload): Promise<void> 
   }
 
   try {
+    console.log(`[sendPushNotification] Sending to ${validPlayerIds.length} devices:`, validPlayerIds);
+    
+    const requestBody = {
+      app_id: env.ONESIGNAL_APP_ID,
+      include_player_ids: validPlayerIds,
+      headings: { en: payload.title },
+      contents: { en: payload.message },
+      data: payload.data,
+      priority: 10,
+      android_channel_id: 'visitor_alerts',
+      ios_sound: 'doorbell.caf',
+      android_sound: 'doorbell',
+      ttl: 300, // 5 minutes TTL
+    };
+
     const response = await fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Basic ${env.ONESIGNAL_REST_API_KEY}`,
       },
-      body: JSON.stringify({
-        app_id: env.ONESIGNAL_APP_ID,
-        include_player_ids: validPlayerIds,
-        headings: { en: payload.title },
-        contents: { en: payload.message },
-        data: payload.data,
-        priority: 10,
-        android_channel_id: 'visitor_alerts',
-        ios_sound: 'doorbell.caf',
-        android_sound: 'doorbell',
-        ttl: 300, // 5 minutes TTL
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('OneSignal push error:', error);
+      console.error('[sendPushNotification] OneSignal API error:', error);
+      console.error('[sendPushNotification] Request body:', JSON.stringify(requestBody, null, 2));
     } else {
-      console.log(`📣 Push notification sent to ${validPlayerIds.length} devices`);
+      const result = await response.json();
+      console.log(`[sendPushNotification] ✅ Push notification sent successfully to ${validPlayerIds.length} devices`);
+      console.log(`[sendPushNotification] OneSignal response:`, JSON.stringify(result, null, 2));
     }
-  } catch (error) {
-    console.error('Failed to send push notification:', error);
+  } catch (error: any) {
+    console.error('[sendPushNotification] Failed to send push notification:', error?.message || error);
   }
 }

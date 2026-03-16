@@ -29,6 +29,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _loadData() async {
     final user = ref.read(authProvider).user;
     debugPrint('[HomeScreen] _loadData called. user=${user?.name}, familyId=${user?.familyId}');
+    
+    // Ensure push token is registered (in case it wasn't set during login)
+    try {
+      final playerId = await NotificationService.getPlayerId();
+      if (playerId != null) {
+        debugPrint('[HomeScreen] Registering push token: $playerId');
+        await ref.read(authProvider.notifier).updatePushToken(playerId);
+      } else {
+        debugPrint('[HomeScreen] WARNING: OneSignal player ID not available yet');
+      }
+    } catch (e) {
+      debugPrint('[HomeScreen] Error registering push token: $e');
+    }
+    
     if (user?.familyId != null) {
       await ref.read(familyProvider.notifier).loadFamily(user!.familyId!);
       await ref
