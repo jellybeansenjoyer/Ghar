@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,11 +28,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _loadData() async {
     final user = ref.read(authProvider).user;
+    debugPrint('[HomeScreen] _loadData called. user=${user?.name}, familyId=${user?.familyId}');
     if (user?.familyId != null) {
       await ref.read(familyProvider.notifier).loadFamily(user!.familyId!);
       await ref
           .read(visitorProvider.notifier)
           .loadHistory(user.familyId!);
+      debugPrint('[HomeScreen] Data loaded successfully');
+    } else {
+      debugPrint('[HomeScreen] No familyId, skipping load');
     }
   }
 

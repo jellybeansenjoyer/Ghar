@@ -3,14 +3,39 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../config/app_config.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/family_provider.dart';
 import '../../config/theme.dart';
 
-class QrCodeScreen extends ConsumerWidget {
+class QrCodeScreen extends ConsumerStatefulWidget {
   const QrCodeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<QrCodeScreen> createState() => _QrCodeScreenState();
+}
+
+class _QrCodeScreenState extends ConsumerState<QrCodeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadIfNeeded();
+    });
+  }
+
+  Future<void> _loadIfNeeded() async {
+    final familyState = ref.read(familyProvider);
+    if (familyState.family == null && !familyState.isLoading) {
+      // Try loading family data from auth
+      final user = ref.read(authProvider).user;
+      if (user?.familyId != null) {
+        await ref.read(familyProvider.notifier).loadFamily(user!.familyId!);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final familyState = ref.watch(familyProvider);
     final family = familyState.family;
     // Always build QR URL from the current API base URL to avoid stale localhost values
@@ -75,12 +100,83 @@ class QrCodeScreen extends ConsumerWidget {
                           color: AppTheme.textColor,
                         ),
                       )
-                    else
+                    else if (familyState.isLoading)
                       const SizedBox(
                         width: 250,
                         height: 250,
                         child: Center(
-                          child: CircularProgressIndicator(),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text(
+                                'Loading QR code...\nThis may take a moment if the\nserver is waking up.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 13, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (familyState.error != null)
+                      SizedBox(
+                        width: 250,
+                        height: 250,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Failed to load QR code',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppTheme.dangerColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                familyState.error!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 12),
+                              ElevatedButton.icon(
+                                onPressed: _loadIfNeeded,
+                                icon: const Icon(Icons.refresh, size: 18),
+                                label: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      SizedBox(
+                        width: 250,
+                        height: 250,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.qr_code, size: 48, color: Colors.grey),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'No QR code available',
+                                style: TextStyle(fontSize: 14, color: Colors.grey),
+                              ),
+                              const SizedBox(height: 12),
+                              ElevatedButton.icon(
+                                onPressed: _loadIfNeeded,
+                                icon: const Icon(Icons.refresh, size: 18),
+                                label: const Text('Load QR Code'),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     const SizedBox(height: 16),

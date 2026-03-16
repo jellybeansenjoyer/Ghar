@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/family.dart' as models;
 import '../models/user.dart';
@@ -74,9 +75,13 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
   Future<void> loadFamily(String familyId) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
+      debugPrint('[FamilyProvider] Loading family: $familyId');
       final family = await _familyService.getFamily(familyId);
+      debugPrint('[FamilyProvider] Family loaded: ${family.name}');
       final members = await _familyService.getMembers(familyId);
+      debugPrint('[FamilyProvider] Members loaded: ${members.length}');
       final qrData = await _familyService.getQrCodeData(familyId);
+      debugPrint('[FamilyProvider] QR data loaded: $qrData');
 
       state = FamilyState(
         family: family,
@@ -84,10 +89,11 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
         qrCodeData: qrData,
         isLoading: false,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('[FamilyProvider] Failed to load family: $e\n$stackTrace');
       state = state.copyWith(
         isLoading: false,
-        error: 'Failed to load family',
+        error: 'Failed to load family: $e',
       );
     }
   }
