@@ -26,22 +26,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
+  Future<void> _registerPushTokenWithRetry({int retries = 3}) async {
+    for (int i = 0; i < retries; i++) {
+      try {
+        final playerId = await NotificationService.getPlayerId();
+        if (playerId != null && playerId.isNotEmpty) {
+          debugPrint('[HomeScreen] Registering push token: $playerId');
+          await ref.read(authProvider.notifier).updatePushToken(playerId);
+          debugPrint('[HomeScreen] ✅ Push token registered successfully');
+          return;
+        } else {
+          debugPrint('[HomeScreen] OneSignal player ID not available yet (attempt ${i + 1}/$retries)');
+          if (i < retries - 1) {
+            await Future.delayed(const Duration(seconds: 2));
+          }
+        }
+      } catch (e) {
+        debugPrint('[HomeScreen] Error registering push token (attempt ${i + 1}/$retries): $e');
+        if (i < retries - 1) {
+          await Future.delayed(const Duration(seconds: 2));
+        }
+      }
+    }
+    debugPrint('[HomeScreen] ⚠️ Failed to register push token after $retries attempts');
+  }
+
   Future<void> _loadData() async {
     final user = ref.read(authProvider).user;
     debugPrint('[HomeScreen] _loadData called. user=${user?.name}, familyId=${user?.familyId}');
     
     // Ensure push token is registered (in case it wasn't set during login)
-    try {
-      final playerId = await NotificationService.getPlayerId();
-      if (playerId != null) {
-        debugPrint('[HomeScreen] Registering push token: $playerId');
-        await ref.read(authProvider.notifier).updatePushToken(playerId);
-      } else {
-        debugPrint('[HomeScreen] WARNING: OneSignal player ID not available yet');
-      }
-    } catch (e) {
-      debugPrint('[HomeScreen] Error registering push token: $e');
-    }
+    // Retry a few times if OneSignal isn't ready yet
+    _registerPushTokenWithRetry();
     
     if (user?.familyId != null) {
       await ref.read(familyProvider.notifier).loadFamily(user!.familyId!);

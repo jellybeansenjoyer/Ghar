@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import '../config/app_config.dart';
@@ -11,8 +12,14 @@ class NotificationService {
   static Future<void> initialize() async {
     // Initialize OneSignal
     if (AppConfig.oneSignalAppId.isNotEmpty) {
+      debugPrint('[NotificationService] Initializing OneSignal with app ID: ${AppConfig.oneSignalAppId}');
       OneSignal.initialize(AppConfig.oneSignalAppId);
       OneSignal.Notifications.requestPermission(true);
+      
+      // Listen for subscription changes
+      OneSignal.User.pushSubscription.addObserver((state) {
+        debugPrint('[NotificationService] Push subscription state changed: ${state.current.id}');
+      });
 
       // Handle notification opened
       OneSignal.Notifications.addClickListener((event) {
@@ -67,8 +74,33 @@ class NotificationService {
   }
 
   static Future<String?> getPlayerId() async {
-    if (AppConfig.oneSignalAppId.isEmpty) return null;
-    return OneSignal.User.pushSubscription.id;
+    if (AppConfig.oneSignalAppId.isEmpty) {
+      debugPrint('[NotificationService] OneSignal not configured (app ID is empty)');
+      return null;
+    }
+    
+    try {
+      // Wait for subscription to be available (with timeout)
+      String? playerId;
+      int attempts = 0;
+      const maxAttempts = 10;
+      
+      while (playerId == null && attempts < maxAttempts) {
+        playerId = OneSignal.User.pushSubscription.id;
+        if (playerId != null && playerId.isNotEmpty) {
+          debugPrint('[NotificationService] OneSignal player ID retrieved: $playerId');
+          return playerId;
+        }
+        attempts++;
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+      
+      debugPrint('[NotificationService] WARNING: OneSignal player ID not available after ${maxAttempts} attempts');
+      return null;
+    } catch (e) {
+      debugPrint('[NotificationService] Error getting player ID: $e');
+      return null;
+    }
   }
 
   static Future<void> showVisitorNotification({
