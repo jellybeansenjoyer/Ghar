@@ -24,9 +24,12 @@ android {
     signingConfigs {
         getByName("debug") {
             storeFile = file("debug-ghar.keystore")
-            storePassword = "ghardev123"
+            // SECURITY NOTE: Debug keystore password - for production builds,
+            // use key.properties file (gitignored) or environment variables.
+            // This is acceptable for debug builds only.
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "ghardev123"
             keyAlias = "ghar-debug"
-            keyPassword = "ghardev123"
+            keyPassword = System.getenv("KEYSTORE_PASSWORD") ?: "ghardev123"
         }
     }
 
