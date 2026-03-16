@@ -6,6 +6,8 @@ import {
   addMember,
   removeMember,
   getQrCode,
+  createInvite,
+  getInviteInfo,
 } from '../controllers/family.controller';
 import { getVisitorHistory } from '../controllers/visitor.controller';
 import { authMiddleware } from '../middleware/auth';
@@ -19,5 +21,7 @@ router.post('/:id/members', authMiddleware, addMember);
 router.delete('/:id/members/:userId', authMiddleware, removeMember);
 router.get('/:id/qr', authMiddleware, getQrCode);
 router.get('/:id/visitors', authMiddleware, getVisitorHistory);
+router.post('/:id/invites', authMiddleware, createInvite);
+router.get('/invite/:token', getInviteInfo); // Public endpoint to check invite validity
 
 export default router;

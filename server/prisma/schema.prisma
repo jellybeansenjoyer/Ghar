@@ -25,6 +25,7 @@ model User {
   refreshTokens       RefreshToken[]
   respondedVisitors   Visitor[] @relation("RespondedBy")
   adminFamilies       Family[]  @relation("FamilyAdmin")
+  createdInvites      FamilyInvite[] @relation("FamilyInviteCreator")
 
   @@map("users")
 }
@@ -40,6 +41,7 @@ model Family {
   admin       User     @relation("FamilyAdmin", fields: [adminId], references: [id])
   members     User[]
   visitors    Visitor[]
+  invites     FamilyInvite[]
 
   @@map("families")
 }
@@ -85,4 +87,21 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+model FamilyInvite {
+  id        String   @id @default(uuid()) @db.Uuid
+  familyId  String   @map("family_id") @db.Uuid
+  token     String   @unique @db.VarChar(64)
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String   @map("created_by") @db.Uuid
+
+  family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  creator   User     @relation("FamilyInviteCreator", fields: [createdBy], references: [id])
+
+  @@map("family_invites")
+  @@index([token])
+  @@index([familyId])
 }

@@ -77,11 +77,11 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
     try {
       debugPrint('[FamilyProvider] Loading family: $familyId');
       final family = await _familyService.getFamily(familyId);
-      debugPrint('[FamilyProvider] Family loaded: ${family.name}');
+      debugPrint('[FamilyProvider] Family loaded: ${family.name} (id: ${family.id})');
       final members = await _familyService.getMembers(familyId);
       debugPrint('[FamilyProvider] Members loaded: ${members.length}');
       final qrData = await _familyService.getQrCodeData(familyId);
-      debugPrint('[FamilyProvider] QR data loaded: $qrData');
+      debugPrint('[FamilyProvider] QR data loaded: $qrData (length: ${qrData.length})');
 
       state = FamilyState(
         family: family,
@@ -106,11 +106,20 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
     } catch (_) {}
   }
 
-  Future<bool> addMember(String phone) async {
+  Future<bool> addMember({
+    String? phone,
+    String? email,
+    String? inviteToken,
+  }) async {
     if (state.family == null) return false;
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await _familyService.addMember(state.family!.id, phone);
+      await _familyService.addMember(
+        state.family!.id,
+        phone: phone,
+        email: email,
+        inviteToken: inviteToken,
+      );
       await loadMembers();
       state = state.copyWith(isLoading: false);
       return true;
@@ -120,6 +129,26 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
         error: _extractError(e),
       );
       return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> createInvite({int expiresInDays = 7}) async {
+    if (state.family == null) {
+      debugPrint('[FamilyProvider] Cannot create invite: no family');
+      return null;
+    }
+    try {
+      debugPrint('[FamilyProvider] Creating invite for family: ${state.family!.id}');
+      final invite = await _familyService.createInvite(
+        state.family!.id,
+        expiresInDays: expiresInDays,
+      );
+      debugPrint('[FamilyProvider] Invite created: ${invite['inviteUrl']}');
+      return invite;
+    } catch (e) {
+      debugPrint('[FamilyProvider] Error creating invite: $e');
+      state = state.copyWith(error: _extractError(e));
+      return null;
     }
   }
 
