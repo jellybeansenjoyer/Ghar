@@ -442,3 +442,67 @@ export async function getInviteInfo(req: Request, res: Response): Promise<void> 
     sendError(res, 'Failed to get invite info');
   }
 }
+
+export async function acceptInvite(req: Request, res: Response): Promise<void> {
+  try {
+    const token = req.params.token as string;
+    const userId = req.user!.userId;
+
+    const invite = await prisma.familyInvite.findUnique({
+      where: { token },
+      include: { family: true },
+    });
+
+    if (!invite) {
+      sendError(res, 'Invalid invite token', 404);
+      return;
+    }
+
+    if (invite.usedAt) {
+      sendError(res, 'This invite has already been used', 400);
+      return;
+    }
+
+    if (invite.expiresAt < new Date()) {
+      sendError(res, 'This invite has expired', 400);
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      sendError(res, 'User not found', 404);
+      return;
+    }
+    if (user.familyId) {
+      sendError(res, 'You already belong to a family', 400);
+      return;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        familyId: invite.familyId,
+        role: 'member',
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        avatarUrl: true,
+        role: true,
+        familyId: true,
+      },
+    });
+
+    await prisma.familyInvite.update({
+      where: { id: invite.id },
+      data: { usedAt: new Date() },
+    });
+
+    sendSuccess(res, { user: updatedUser, familyId: invite.familyId }, 'Invite accepted', 200);
+  } catch (error: any) {
+    console.error('Accept invite error:', error?.message || error);
+    sendError(res, 'Failed to accept invite');
+  }
+}

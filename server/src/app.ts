@@ -73,6 +73,58 @@ app.get('/api/debug/logs', (_req, res) => {
   });
 });
 
+// Public Invite landing: attempts to open the app via deep link and shows basic info
+app.get('/invite/:token', (req, res) => {
+  const { token } = req.params;
+  // Minimal HTML that deep-links into the app and provides fallbacks
+  res.type('html').send(`
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ghar - Family Invite</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 24px; line-height: 1.5; }
+      .card { max-width: 560px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+      .btn { display: inline-block; padding: 12px 16px; background: #2563eb; color: #fff; border-radius: 8px; text-decoration: none; }
+      .muted { color: #6b7280; font-size: 14px; }
+      code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; }
+    </style>
+    <script>
+      // Try opening the app via custom scheme
+      function openApp() {
+        const scheme = 'ghar://invite/${token}';
+        window.location.href = scheme;
+        // Fallback after 1.5s to show instructions
+        setTimeout(() => {
+          document.getElementById('fallback').style.display = 'block';
+        }, 1500);
+      }
+      window.onload = openApp;
+    </script>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Open Ghar to Join Family</h2>
+      <p>Tap the button below to open the Ghar app and accept your family invite.</p>
+      <p><a class="btn" href="ghar://invite/${token}">Open in Ghar</a></p>
+      <div id="fallback" class="muted" style="display:none;margin-top:16px;">
+        <p>If nothing happened:</p>
+        <ol>
+          <li>Ensure the Ghar app is installed.</li>
+          <li>Open the app and sign in.</li>
+          <li>Return to this page and tap <strong>Open in Ghar</strong> again.</li>
+        </ol>
+        <p>You can also share this code with the app: <code>${token}</code></p>
+      </div>
+      <p class="muted" style="margin-top:12px;">This link is secure and expires after a short time.</p>
+    </div>
+  </body>
+</html>
+  `);
+});
+
 // Error handler
 app.use(errorHandler);
 
