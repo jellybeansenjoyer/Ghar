@@ -129,6 +129,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> signInWithEmail(String email, {String? name}) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final result = await _authService.emailSignIn(email, name: name);
+      state = AuthState(
+        user: result.user,
+        isAuthenticated: true,
+        isLoading: false,
+      );
+      await _registerPushToken();
+      return result.isNewUser;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: _extractError(e));
+      return false;
+    }
+  }
+
   Future<void> updateProfile({String? name, String? avatarUrl}) async {
     try {
       final updatedUser =

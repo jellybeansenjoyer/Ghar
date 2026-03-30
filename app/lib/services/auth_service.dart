@@ -49,6 +49,28 @@ class AuthService {
     return (user: user, isNewUser: isNewUser);
   }
 
+  Future<({AppUser user, bool isNewUser})> emailSignIn(
+    String email, {
+    String? name,
+  }) async {
+    final response = await _dio.post('/auth/email', data: {
+      'email': email,
+      if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+    });
+
+    final data = response.data['data'];
+    await SecureStorageService.saveTokens(
+      accessToken: data['accessToken'],
+      refreshToken: data['refreshToken'],
+    );
+
+    final user = AppUser.fromJson(data['user']);
+    await SecureStorageService.saveUserId(user.id);
+    final bool isNewUser = data['isNewUser'] == true;
+
+    return (user: user, isNewUser: isNewUser);
+  }
+
   Future<AppUser?> getProfile() async {
     try {
       final response = await _dio.get('/users/me');
@@ -61,8 +83,8 @@ class AuthService {
 
   Future<AppUser> updateProfile({String? name, String? avatarUrl}) async {
     final response = await _dio.put('/users/me', data: {
-      'name': ?name,
-      'avatarUrl': ?avatarUrl,
+      if (name != null) 'name': name,
+      if (avatarUrl != null) 'avatarUrl': avatarUrl,
     });
     return AppUser.fromJson(response.data['data']);
   }

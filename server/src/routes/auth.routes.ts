@@ -3,6 +3,7 @@ import {
   sendOtpHandler,
   verifyOtpHandler,
   googleAuthHandler,
+  emailAuthHandler,
   refreshTokenHandler,
   logoutHandler,
 } from '../controllers/auth.controller';
@@ -14,6 +15,7 @@ const router = Router();
 router.post('/send-otp', otpSendLimiter, sendOtpHandler);
 router.post('/verify-otp', otpVerifyLimiter, verifyOtpHandler);
 router.post('/google', googleAuthHandler);
+router.post('/email', emailAuthHandler);
 router.post('/refresh', refreshTokenHandler);
 router.post('/logout', authMiddleware, logoutHandler);
 

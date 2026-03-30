@@ -12,12 +12,17 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  static const bool _showPhoneAuth = false; // Keep phone flow in code, hide in UI for now.
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
     _phoneController.dispose();
+    _emailController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -62,6 +67,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _signInWithEmail() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final email = _emailController.text.trim();
+    final name = _nameController.text.trim().isEmpty ? null : _nameController.text.trim();
+    final isNew = await ref.read(authProvider.notifier).signInWithEmail(email, name: name);
+
+    if (!mounted) return;
+    final auth = ref.read(authProvider);
+    if (auth.isAuthenticated) {
+      if (isNew || !auth.user!.hasFamily) {
+        context.go('/family-setup');
+      } else {
+        context.go('/home');
+      }
+    } else if (auth.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(auth.error!), backgroundColor: AppTheme.dangerColor),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -102,14 +129,76 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
               const SizedBox(height: 48),
 
-              // Phone Login
               Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (_showPhoneAuth) ...[
+                      const Text(
+                        'Phone Number',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          hintText: 'Enter your phone number',
+                          prefixText: '+91  ',
+                        ),
+                        validator: (value) {
+                          if (!_showPhoneAuth) return null;
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your phone number';
+                          }
+                          if (value.trim().length < 10) {
+                            return 'Please enter a valid phone number';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: authState.isLoading ? null : _sendOtp,
+                          child: authState.isLoading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Send OTP'),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          const Expanded(child: Divider()),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'OR',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const Expanded(child: Divider()),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                     const Text(
-                      'Phone Number',
+                      'Email',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -117,27 +206,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
-                        hintText: 'Enter your phone number',
-                        prefixText: '+91  ',
+                        hintText: 'Enter your email',
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your phone number';
+                          return 'Please enter your email';
                         }
-                        if (value.trim().length < 10) {
-                          return 'Please enter a valid phone number';
+                        final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                        if (!emailRegex.hasMatch(value.trim())) {
+                          return 'Please enter a valid email';
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _nameController,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        hintText: 'Your name (optional)',
+                      ),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: authState.isLoading ? null : _sendOtp,
+                        onPressed: authState.isLoading ? null : _signInWithEmail,
                         child: authState.isLoading
                             ? const SizedBox(
                                 width: 24,
@@ -147,7 +244,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Send OTP'),
+                            : const Text('Continue with Email'),
                       ),
                     ),
                   ],
@@ -155,8 +252,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
 
               const SizedBox(height: 32),
-
-              // Divider
               Row(
                 children: [
                   const Expanded(child: Divider()),
@@ -173,7 +268,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const Expanded(child: Divider()),
                 ],
               ),
-
               const SizedBox(height: 32),
 
               // Google Sign In

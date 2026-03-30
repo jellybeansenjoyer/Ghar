@@ -4,7 +4,13 @@ import { sendOtp as sendOtpSms, verifyOtp } from '../services/otp.service';
 import { verifyGoogleToken } from '../services/google-auth.service';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import { sendSuccess, sendError } from '../utils/response';
-import { sendOtpSchema, verifyOtpSchema, googleAuthSchema, refreshTokenSchema } from '../validators/auth.validator';
+import {
+  sendOtpSchema,
+  verifyOtpSchema,
+  googleAuthSchema,
+  emailAuthSchema,
+  refreshTokenSchema,
+} from '../validators/auth.validator';
 
 export async function sendOtpHandler(req: Request, res: Response): Promise<void> {
   try {
@@ -136,6 +142,55 @@ export async function googleAuthHandler(req: Request, res: Response): Promise<vo
     }
     console.error('Google auth error:', error);
     sendError(res, 'Google authentication failed', 500);
+  }
+}
+
+export async function emailAuthHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const { email, name } = emailAuthSchema.parse(req.body);
+
+    let user = await prisma.user.findUnique({ where: { email } });
+    let isNewUser = false;
+
+    if (!user) {
+      isNewUser = true;
+      user = await prisma.user.create({
+        data: {
+          name: name?.trim() || email.split('@')[0] || 'User',
+          email,
+          role: 'member',
+        },
+      });
+    } else if (name && name.trim().length > 0 && user.name !== name.trim()) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { name: name.trim() },
+      });
+    }
+
+    const accessToken = signAccessToken({
+      userId: user.id,
+      familyId: user.familyId,
+      role: user.role,
+    });
+    const refreshToken = signRefreshToken(user.id);
+
+    await prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        token: refreshToken,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    sendSuccess(res, { accessToken, refreshToken, user, isNewUser }, 'Login successful');
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      sendError(res, 'Validation error', 400, error.errors);
+      return;
+    }
+    console.error('Email auth error:', error);
+    sendError(res, 'Email authentication failed', 500);
   }
 }
 

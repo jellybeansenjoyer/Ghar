@@ -17,6 +17,11 @@ export const googleAuthSchema = z.object({
   idToken: z.string().min(1, 'Google ID token is required'),
 });
 
+export const emailAuthSchema = z.object({
+  email: z.string().email('Valid email is required'),
+  name: z.string().min(1, 'Name is required').max(255).optional(),
+});
+
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
 });
