@@ -10,7 +10,7 @@ class FamilyService {
       String name, String? address) async {
     final response = await _dio.post('/families', data: {
       'name': name,
-      'address': ?address,
+      if (address != null) 'address': address,
     });
 
     final data = response.data['data'];
@@ -59,6 +59,10 @@ class FamilyService {
   Future<Map<String, dynamic>> getInviteInfo(String token) async {
     final response = await _dio.get('/families/invite/$token');
     return response.data['data'] as Map<String, dynamic>;
+  }
+
+  Future<void> acceptInvite(String token) async {
+    await _dio.post('/families/invite/$token/accept');
   }
 
   Future<void> removeMember(String familyId, String userId) async {

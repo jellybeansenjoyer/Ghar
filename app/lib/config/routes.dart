@@ -8,6 +8,7 @@ import '../screens/home/home_screen.dart';
 import '../screens/home/qr_code_screen.dart';
 import '../screens/family/manage_members_screen.dart';
 import '../screens/family/add_member_screen.dart';
+import '../screens/family/invite_accept_screen.dart';
 import '../screens/visitor/incoming_visitor_screen.dart';
 import '../screens/visitor/visitor_history_screen.dart';
 import '../screens/visitor/visitor_detail_screen.dart';
@@ -17,6 +18,16 @@ import '../screens/profile/profile_screen.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
+    redirect: (context, state) {
+      final uri = state.uri;
+      // Normalize custom-scheme deep links like: ghar://invite/<token>
+      if (uri.scheme == 'ghar' &&
+          uri.host == 'invite' &&
+          uri.pathSegments.isNotEmpty) {
+        return '/invite/${uri.pathSegments.first}';
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
@@ -52,6 +63,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/add-member',
         builder: (context, state) => const AddMemberScreen(),
+      ),
+      GoRoute(
+        path: '/invite/:token',
+        builder: (context, state) {
+          final token = state.pathParameters['token']!;
+          return InviteAcceptScreen(token: token);
+        },
       ),
       GoRoute(
         path: '/incoming-visitor',
