@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
@@ -23,14 +24,27 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureRealtimeConnection();
       _loadMessages();
       _listenForMessages();
+      _startPollingFallback();
     });
+  }
+
+  void _ensureRealtimeConnection() {
+    final user = ref.read(authProvider).user;
+    final familyId = user?.familyId;
+    if (familyId != null) {
+      final socket = SocketService.instance;
+      socket.connect();
+      socket.joinFamilyRoom(familyId);
+    }
   }
 
   Future<void> _loadMessages() async {
@@ -44,6 +58,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ref.read(chatProvider.notifier).addMessage(data);
         _scrollToBottom();
       }
+    });
+  }
+
+  void _startPollingFallback() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (!mounted) return;
+      await ref.read(chatProvider.notifier).loadMessages(widget.visitorId);
+      _scrollToBottom();
     });
   }
 
@@ -76,6 +99,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();

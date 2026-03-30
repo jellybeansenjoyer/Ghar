@@ -20,6 +20,7 @@
   let socket = null;
   let photoFile = null;
   let statusPollTimer = null;
+  let chatPollTimer = null;
 
   // DOM Elements
   const formPage = document.getElementById('formPage');
@@ -49,6 +50,11 @@
       p.classList.remove('active');
     });
     page.classList.add('active');
+    if (page === chatPage) {
+      startChatPolling();
+    } else {
+      stopChatPolling();
+    }
   }
 
   // Photo handling
@@ -261,6 +267,19 @@
       });
     } catch (e) {
       console.warn('Failed to load chat history:', e);
+    }
+  }
+
+  function startChatPolling() {
+    stopChatPolling();
+    loadMessages();
+    chatPollTimer = setInterval(loadMessages, 2000);
+  }
+
+  function stopChatPolling() {
+    if (chatPollTimer) {
+      clearInterval(chatPollTimer);
+      chatPollTimer = null;
     }
   }
 
