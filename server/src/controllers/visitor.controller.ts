@@ -288,6 +288,7 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
     const io = getIO();
     io.to(`visitor:${visitorId}`).emit('chat:message', {
       messageId: message.id,
+      visitorId,
       content: message.content,
       senderType: message.senderType,
       senderName: message.senderName,

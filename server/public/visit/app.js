@@ -19,6 +19,7 @@
   let visitorName = '';
   let socket = null;
   let photoFile = null;
+  let statusPollTimer = null;
 
   // DOM Elements
   const formPage = document.getElementById('formPage');
@@ -105,6 +106,8 @@
 
       // Connect Socket.IO for real-time updates
       connectSocket();
+      // Fallback: poll status so we never get stuck on "Ringing..."
+      startStatusPolling();
     } catch (error) {
       alert(error.message || 'Something went wrong. Please try again.');
       submitBtn.disabled = false;
@@ -123,6 +126,8 @@
       console.log('Connected to server');
       // Join visitor room
       socket.emit('join:visitor', { visitorId: visitorId });
+      // Sync current status immediately after joining (covers race conditions)
+      fetchCurrentVisitorStatus();
     });
 
     // Listen for visitor status updates
@@ -149,6 +154,7 @@
 
   // Handle response from family
   function handleResponse(status, respondedBy) {
+    stopStatusPolling();
     if (status === 'accepted') {
       responseIcon.textContent = '✅';
       responseTitle.textContent = 'Welcome!';
@@ -158,6 +164,7 @@
       // Show chat option after a moment
       setTimeout(function () {
         showPage(chatPage);
+        loadMessages();
       }, 3000);
     } else if (status === 'rejected') {
       responseIcon.textContent = '😔';
@@ -169,6 +176,33 @@
       responseTitle.textContent = 'No Response';
       responseMessage.textContent = 'No one responded. They might be away. Please try again later.';
       showPage(responsePage);
+    }
+  }
+
+  async function fetchCurrentVisitorStatus() {
+    if (!visitorId) return;
+    try {
+      const response = await fetch(API_BASE + '/api/visitors/' + visitorId);
+      const result = await response.json();
+      if (!result.success) return;
+      const visitor = result.data;
+      if (visitor && visitor.status && visitor.status !== 'pending') {
+        handleResponse(visitor.status, visitor.respondedBy?.name || null);
+      }
+    } catch (e) {
+      console.warn('Status sync failed:', e);
+    }
+  }
+
+  function startStatusPolling() {
+    stopStatusPolling();
+    statusPollTimer = setInterval(fetchCurrentVisitorStatus, 2000);
+  }
+
+  function stopStatusPolling() {
+    if (statusPollTimer) {
+      clearInterval(statusPollTimer);
+      statusPollTimer = null;
     }
   }
 
@@ -209,6 +243,23 @@
       });
     } catch (error) {
       console.error('Failed to send message:', error);
+    }
+  }
+
+  async function loadMessages() {
+    if (!visitorId) return;
+    try {
+      const response = await fetch(API_BASE + '/api/visitors/' + visitorId + '/messages');
+      const result = await response.json();
+      if (!result.success) return;
+      chatMessages.innerHTML = '';
+      const messages = result.data || [];
+      messages.forEach(function (m) {
+        const isSent = m.senderType === 'visitor';
+        addChatMessage(m.content, m.senderName || (isSent ? visitorName : 'Member'), isSent);
+      });
+    } catch (e) {
+      console.warn('Failed to load chat history:', e);
     }
   }
 
