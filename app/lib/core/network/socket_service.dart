@@ -20,7 +20,12 @@ class SocketService {
   bool get isConnected => _isConnected;
 
   void connect() {
-    if (_socket != null && _isConnected) return;
+    if (_socket != null) {
+      if (!_isConnected) {
+        _socket!.connect();
+      }
+      return;
+    }
 
     _socket = io.io(
       AppConfig.apiBaseUrl,
@@ -29,7 +34,7 @@ class SocketService {
           .enableAutoConnect()
           .enableReconnection()
           .setReconnectionDelay(1000)
-          .setReconnectionAttempts(10)
+          .setReconnectionAttempts(999999)
           .build(),
     );
 
@@ -45,6 +50,14 @@ class SocketService {
     _socket!.onDisconnect((_) {
       _isConnected = false;
       developer.log('Socket disconnected', name: 'Socket');
+    });
+
+    _socket!.onReconnect((_) {
+      _isConnected = true;
+      developer.log('Socket reconnected', name: 'Socket');
+      if (_familyId != null) {
+        joinFamilyRoom(_familyId!);
+      }
     });
 
     _socket!.onError((error) {

@@ -19,8 +19,6 @@
   let visitorName = '';
   let socket = null;
   let photoFile = null;
-  let statusPollTimer = null;
-  let chatPollTimer = null;
 
   // DOM Elements
   const formPage = document.getElementById('formPage');
@@ -50,11 +48,7 @@
       p.classList.remove('active');
     });
     page.classList.add('active');
-    if (page === chatPage) {
-      startChatPolling();
-    } else {
-      stopChatPolling();
-    }
+    if (page === chatPage) loadMessages();
   }
 
   // Photo handling
@@ -112,8 +106,6 @@
 
       // Connect Socket.IO for real-time updates
       connectSocket();
-      // Fallback: poll status so we never get stuck on "Ringing..."
-      startStatusPolling();
     } catch (error) {
       alert(error.message || 'Something went wrong. Please try again.');
       submitBtn.disabled = false;
@@ -124,7 +116,10 @@
 
   // Socket.IO connection
   function connectSocket() {
-    if (socket && socket.connected) return;
+    if (socket) {
+      if (!socket.connected) socket.connect();
+      return;
+    }
     socket = io(API_BASE, {
       transports: ['websocket', 'polling'],
     });
@@ -135,6 +130,9 @@
       socket.emit('join:visitor', { visitorId: visitorId });
       // Sync current status immediately after joining (covers race conditions)
       fetchCurrentVisitorStatus();
+      if (chatPage.classList.contains('active')) {
+        loadMessages();
+      }
     });
 
     // Listen for visitor status updates
@@ -161,7 +159,6 @@
 
   // Handle response from family
   function handleResponse(status, respondedBy) {
-    stopStatusPolling();
     if (status === 'accepted') {
       responseIcon.textContent = '✅';
       responseTitle.textContent = 'Welcome!';
@@ -202,15 +199,11 @@
   }
 
   function startStatusPolling() {
-    stopStatusPolling();
-    statusPollTimer = setInterval(fetchCurrentVisitorStatus, 2000);
+    // polling removed by design (pure realtime)
   }
 
   function stopStatusPolling() {
-    if (statusPollTimer) {
-      clearInterval(statusPollTimer);
-      statusPollTimer = null;
-    }
+    // polling removed by design (pure realtime)
   }
 
   // Chat functionality
@@ -270,18 +263,8 @@
     }
   }
 
-  function startChatPolling() {
-    stopChatPolling();
-    loadMessages();
-    chatPollTimer = setInterval(loadMessages, 2000);
-  }
-
-  function stopChatPolling() {
-    if (chatPollTimer) {
-      clearInterval(chatPollTimer);
-      chatPollTimer = null;
-    }
-  }
+  function startChatPolling() {}
+  function stopChatPolling() {}
 
   chatSendBtn.addEventListener('click', sendChatMessage);
   chatInput.addEventListener('keypress', function (e) {
