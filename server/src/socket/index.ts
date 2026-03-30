@@ -1,6 +1,7 @@
 import { Server as SocketServer } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import { verifyAccessToken } from '../utils/jwt';
+import prisma from '../config/database';
 
 let io: SocketServer;
 
@@ -21,15 +22,32 @@ export function initializeSocket(httpServer: HttpServer): SocketServer {
     socket.on('join:family', async (data: { familyId: string; token: string }) => {
       try {
         const payload = verifyAccessToken(data.token);
-        if (payload.familyId === data.familyId) {
-          const roomName = `family:${data.familyId}`;
-          await socket.join(roomName);
-          const socketsInRoom = await io.in(roomName).fetchSockets();
-          console.log(`👨‍👩‍👧‍👦 User ${payload.userId} joined family room: ${data.familyId} (Total in room: ${socketsInRoom.length})`);
-        } else {
-          console.error(`[join:family] User ${payload.userId} tried to join wrong family. Token family: ${payload.familyId}, Requested: ${data.familyId}`);
-          socket.emit('error', { message: 'Family ID mismatch' });
+        // IMPORTANT: do not rely only on token.familyId, it may be stale
+        // right after a member is added/joins a family.
+        const user = await prisma.user.findUnique({
+          where: { id: payload.userId },
+          select: { id: true, familyId: true },
+        });
+
+        if (!user) {
+          socket.emit('error', { message: 'User not found' });
+          return;
         }
+
+        if (user.familyId !== data.familyId) {
+          console.error(
+            `[join:family] Access denied for user ${payload.userId}. DB family: ${user.familyId}, requested: ${data.familyId}, token family: ${payload.familyId}`
+          );
+          socket.emit('error', { message: 'You are not a member of this family' });
+          return;
+        }
+
+        const roomName = `family:${data.familyId}`;
+        await socket.join(roomName);
+        const socketsInRoom = await io.in(roomName).fetchSockets();
+        console.log(
+          `👨‍👩‍👧‍👦 User ${payload.userId} joined family room: ${data.familyId} (Total in room: ${socketsInRoom.length})`
+        );
       } catch (error: any) {
         console.error('[join:family] Failed to join family room:', error?.message || error);
         socket.emit('error', { message: 'Authentication failed' });
