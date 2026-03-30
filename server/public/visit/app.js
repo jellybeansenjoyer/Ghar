@@ -118,6 +118,7 @@
 
   // Socket.IO connection
   function connectSocket() {
+    if (socket && socket.connected) return;
     socket = io(API_BASE, {
       transports: ['websocket', 'polling'],
     });
@@ -267,6 +268,17 @@
   chatInput.addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
       sendChatMessage();
+    }
+  });
+
+  // When browser/tab returns to foreground, force socket rejoin + state resync.
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && visitorId) {
+      connectSocket();
+      fetchCurrentVisitorStatus();
+      if (chatPage.classList.contains('active')) {
+        loadMessages();
+      }
     }
   });
 })();
